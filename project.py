@@ -3,8 +3,6 @@
 """
 Created on Tue May 20 18:27:58 2025
 
-@author: hage
-
 The docstring documentation of some functions may have been created 
 using AI tools such as ChatGPT or Github Copilot.
 """
@@ -98,8 +96,6 @@ def index_to_char(idx: int):
         return LEGAL_CHARS_SEQ[idx]
     else:
         return '?'
-    
-    
     
 def int_to_binary(x, nb_bits = MIN_R_VALUE+1):
     return np.array((((x[:,None] & (1 << np.arange(nb_bits))[::-1])) > 0).astype(int)).flatten()
@@ -226,7 +222,6 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
     score_2 = B @ x_2_mat
         
     
-    
     # compute score(i, Y) for each elem
     score = np.maximum(score_1, score_2)
     
@@ -243,12 +238,6 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
         
     return m
         
-            
-    
-    
-    
-    
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 2)", default=5)
