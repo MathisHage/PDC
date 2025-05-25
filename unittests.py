@@ -83,14 +83,17 @@ class Tests(unittest.TestCase):
         self.assertEqual(m, m_dec)
         
     
-    """def test_error_prob(self):
+    def test_error_prob(self):
         
         res = np.empty((7), dtype=float)
         
         loop = 100
+        
+        wanted_energy = 1999
+        
         for r in range(5, 12):
             print(f"Begin error for r = {r}")
-            eps_b = 1000/(math.ceil(240/(r+1))*(r+1))
+            eps_b = wanted_energy/(math.ceil(240/(r+1))*(r+1))
             err = 0
             for i in range(loop):
                 m = self.get_seq()
@@ -109,7 +112,7 @@ class Tests(unittest.TestCase):
             res[r-5] = err*100/loop
             print(f"End error for r = {r}. Final val = {err}. Error prob = {err*100/loop}%")
             
-        print(res)"""
+        print(res)
         
         
 

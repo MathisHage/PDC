@@ -41,17 +41,22 @@ MIN_R_VALUE = math.floor(math.log2(CHAR_NUMBER)) - 1
 SEQUENCE_LENGTH = 40
 
 def m_r(r: int):
-    rows = 2**r
-    def helper(array):
-        if array.shape[0] == rows:
-            return array
+    if r <= 0:
+        return np.ones((1, 1))
+    
+    try:
+        arr = np.load(f"res/matrix/m_{r}")
+    except FileNotFoundError:
+        array = m_r(r-1)
         
         top = np.concatenate((array, array), axis = 1)
         bottom = np.concatenate((array, -array), axis = 1)
         
-        return helper(np.concatenate((top, bottom), axis = 0))
-    
-    return helper(np.ones((1, 1), dtype=int))
+        arr = np.concatenate((top, bottom), axis = 0)
+        
+        np.save(f"res/matrix/m_{r}", arr)
+        
+    return arr
     
 
 def b_r(r: int):
@@ -181,30 +186,34 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
     
     B = b_r(r)
     
-    """for i in range(0, x.shape[0], 2**(r+1)):
-        temp_even = x[i:(i+2**(r+1)):2]
-        temp_odd = x[i+1:(i+2**(r+1)):2]
+    for i in range(0, x.shape[0], 2**(r+1)):
+        temp_even = x[i:(i+length_c):2]
+        temp_odd = x[i+1:(i+length_c):2]
         
-        out = np.empty((2*(r+1))))
+        out = np.empty(length_c)
         
-        out[0:2**r] = temp_even
-        out[2**r:] = temp_odd
+        out[0:length_c//2] = temp_even
+        out[length_c//2:length_c] = temp_odd
         
-        x[i:i+2**(r+1)] = out"""
+        x[i:i+length_c] = out
     
     # s = 1 : G occurs in the even components
     x_1 = x.copy()
     # s = 2 : G occurs in the odd components
     x_2 = x.copy()
 
-    x_1[::2] *= math.sqrt(G)
-    x_2[1::2] *= math.sqrt(G)
+    """x_1[::2] *= math.sqrt(G)
+    x_2[1::2] *= math.sqrt(G)"""
+    
+    for i in range(0, n, length_c):
+        x_2[i:i+length_c//2] *= math.sqrt(G)
+        x_1[i+length_c//2:i+length_c] *= math.sqrt(G)
     
     # Column i is the Y vector for the i^th encoded character
     x_1_mat = x_1.reshape(nb_c, length_c)
     x_2_mat = x_2.reshape(nb_c, length_c)
     
-    for i in range(nb_c):
+    """for i in range(nb_c):
         temp_even_1 = x_1_mat[i][::2]
         temp_even_2 = x_2_mat[i][::2]
         
@@ -219,7 +228,7 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
         out2[length_c//2:] = temp_odd_2
         
         x_1_mat[i] = out1
-        x_2_mat[i] = out2
+        x_2_mat[i] = out2"""
         
     x_1_mat = x_1_mat.T
     x_2_mat = x_2_mat.T
