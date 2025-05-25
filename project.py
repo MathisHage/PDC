@@ -12,6 +12,7 @@ import numpy as np
 import argparse
 import random
 import math
+import os
 
 #------------- UTF-8 constants --------------
 LOWERCASE_OFFSET = 0
@@ -40,10 +41,10 @@ SEQUENCE_LENGTH = 40
 
 def m_r(r: int):
     if r <= 0:
-        return np.ones((1, 1))
+        return np.ones((1, 1), dtype=int)
     
     try:
-        arr = np.load(f"res/matrix/m_{r}")
+        arr = np.load(f"res/matrix/m_{r}.npy")
     except FileNotFoundError:
         array = m_r(r-1)
         
@@ -52,6 +53,7 @@ def m_r(r: int):
         
         arr = np.concatenate((top, bottom), axis = 0)
         
+        os.makedirs("res/matrix", exist_ok=True)
         np.save(f"res/matrix/m_{r}", arr)
         
     return arr
@@ -143,7 +145,7 @@ def encoder(message: str, r: int, epsilon: float):
         m_int[idx] = char_index(c)
         idx += 1
         
-    # Convert in a contiguous binary array.
+    # Convert to a contiguous binary array.
     m_bin = int_to_binary(m_int)
     
     # To have an integer number of c_i's.
