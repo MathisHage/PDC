@@ -3,8 +3,6 @@
 """
 Created on Tue May 20 18:27:58 2025
 
-@author: hage
-
 The docstring documentation of some functions may have been created 
 using AI tools such as ChatGPT or Github Copilot.
 """
@@ -14,6 +12,7 @@ import numpy as np
 import argparse
 import random
 import math
+import os
 
 #------------- UTF-8 constants --------------
 LOWERCASE_OFFSET = 0
@@ -41,17 +40,23 @@ MIN_R_VALUE = math.floor(math.log2(CHAR_NUMBER)) - 1
 SEQUENCE_LENGTH = 40
 
 def m_r(r: int):
-    rows = 2**r
-    def helper(array):
-        if array.shape[0] == rows:
-            return array
+    if r <= 0:
+        return np.ones((1, 1), dtype=int)
+    
+    try:
+        arr = np.load(f"res/matrix/m_{r}.npy")
+    except FileNotFoundError:
+        array = m_r(r-1)
         
         top = np.concatenate((array, array), axis = 1)
         bottom = np.concatenate((array, -array), axis = 1)
         
-        return helper(np.concatenate((top, bottom), axis = 0))
-    
-    return helper(np.ones((1, 1), dtype=int))
+        arr = np.concatenate((top, bottom), axis = 0)
+        
+        os.makedirs("res/matrix", exist_ok=True)
+        np.save(f"res/matrix/m_{r}", arr)
+        
+    return arr
     
 
 def b_r(r: int):
@@ -93,8 +98,6 @@ def index_to_char(idx: int):
         return LEGAL_CHARS_SEQ[idx]
     else:
         return '?'
-    
-    
     
 def int_to_binary(x, nb_bits = MIN_R_VALUE+1):
     return np.array((((x[:,None] & (1 << np.arange(nb_bits))[::-1])) > 0).astype(int)).flatten()
@@ -142,9 +145,10 @@ def encoder(message: str, r: int, epsilon: float):
         m_int[idx] = char_index(c)
         idx += 1
         
-        
+    # Convert to a contiguous binary array.
     m_bin = int_to_binary(m_int)
     
+    # To have an integer number of c_i's.
     if m_bin.shape[0] % (r+1) != 0:
         m_bin = np.append(m_bin, np.zeros(((r+1) - (m_bin.shape[0] % (r+1)))))
         
@@ -155,7 +159,8 @@ def encoder(message: str, r: int, epsilon: float):
     for i in range(X.shape[0]):
         X[i] = B[binary_to_int(m_bin[idx:(idx+r+1)])]
         
-        #Put the first half of the elements as the even components, and the second half as the odd components
+        # Interleave : put the first half of the elements as the even components, 
+        # and the second half as the odd components
         temp1 = X[i][0:2**r]
         temp2 = X[i][2**r:]
         out = np.empty(shape = (2**(r+1)))
@@ -175,61 +180,49 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
     
     n = x.shape[0]
     
+    # The number of c_i's contained in X.
     nb_c = math.ceil(40 * 6 / (r+1))
     
+    # The length of a c_i.
     length_c = 2**(r+1)
     
     B = b_r(r)
     
-    """for i in range(0, x.shape[0], 2**(r+1)):
-        temp_even = x[i:(i+2**(r+1)):2]
-        temp_odd = x[i+1:(i+2**(r+1)):2]
+    # De-interleave the codewords, i.e. put the even coefs as the top half, and
+    # the odd coefs as the bottom half of each c_i.
+    for i in range(0, x.shape[0], 2**(r+1)):
+        temp_even = x[i:(i+length_c):2]
+        temp_odd = x[i+1:(i+length_c):2]
         
-        out = np.empty((2*(r+1))))
+        out = np.empty(length_c)
         
-        out[0:2**r] = temp_even
-        out[2**r:] = temp_odd
+        out[0:length_c//2] = temp_even
+        out[length_c//2:length_c] = temp_odd
         
-        x[i:i+2**(r+1)] = out"""
+        x[i:i+length_c] = out
     
     # s = 1 : G occurs in the even components
     x_1 = x.copy()
     # s = 2 : G occurs in the odd components
     x_2 = x.copy()
 
-    x_1[::2] *= math.sqrt(G)
-    x_2[1::2] *= math.sqrt(G)
+
+    # Multiply each top (x_1) / bottom (x_2) coefs by sqrt(G), to implement the
+    # decoding rule.
+    for i in range(0, n, length_c):
+        x_1[i:i+length_c//2] *= math.sqrt(G)
+        x_2[i+length_c//2:i+length_c] *= math.sqrt(G)
     
-    # Column i is the Y vector for the i^th encoded character
-    x_1_mat = x_1.reshape(nb_c, length_c)
-    x_2_mat = x_2.reshape(nb_c, length_c)
     
-    for i in range(nb_c):
-        temp_even_1 = x_1_mat[i][::2]
-        temp_even_2 = x_2_mat[i][::2]
-        
-        temp_odd_1 = x_1_mat[i][1::2]
-        temp_odd_2 = x_2_mat[i][1::2]
-        
-        out1 = np.empty(shape = (length_c))
-        out1[0:length_c//2] = temp_even_1
-        out1[length_c//2:] = temp_odd_1
-        out2 = np.empty(shape = (length_c))
-        out2[0:length_c//2] = temp_even_2
-        out2[length_c//2:] = temp_odd_2
-        
-        x_1_mat[i] = out1
-        x_2_mat[i] = out2
-        
-    x_1_mat = x_1_mat.T
-    x_2_mat = x_2_mat.T
+    # Matrix with the columns being every Y
+    x_1_mat = x_1.reshape(nb_c, length_c).T
+    x_2_mat = x_2.reshape(nb_c, length_c).T
     
-    # Matrix with (i, j) coefficient being the scalar product of c_i with the Y
-    # of the j^th encoded character
+    # Matrix with (i, j) coefficient being the scalar product of c_i with the
+    # j^th Y (with the factor sqrt(G) added before).
     score_1 = B @ x_1_mat
     score_2 = B @ x_2_mat
         
-    
     
     # compute score(i, Y) for each elem
     score = np.maximum(score_1, score_2)
@@ -240,18 +233,13 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
     bit_tab = int_to_binary(argmax, r+1)
     
     m = ""
+    # Retrieve the characters (consecutive sequences of 6 bits in `bit_tab`) and
+    # get the corresponding symbol.
     for i in range(0, SEQUENCE_LENGTH * (MIN_R_VALUE + 1), MIN_R_VALUE + 1):
         m += index_to_char(binary_to_int(bit_tab[i:(i+MIN_R_VALUE+1)]))
-
         
     return m
         
-            
-    
-    
-    
-    
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 2)", default=5)
