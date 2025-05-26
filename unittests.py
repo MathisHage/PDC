@@ -3,6 +3,7 @@ import project as pj
 import random
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 class Tests(unittest.TestCase):
     
@@ -88,12 +89,9 @@ class Tests(unittest.TestCase):
         res = np.empty((7), dtype=float)
         
         loop = 100
-        
-        wanted_energy = 1999
-        
         for r in range(5, 12):
             print(f"Begin error for r = {r}")
-            eps_b = wanted_energy/(math.ceil(240/(r+1))*(r+1))
+            eps_b = 2000/(math.ceil(240/(r+1))*(r+1))
             err = 0
             for i in range(loop):
                 m = self.get_seq()
@@ -113,6 +111,45 @@ class Tests(unittest.TestCase):
             print(f"End error for r = {r}. Final val = {err}. Error prob = {err*100/loop}%")
             
         print(res)
+        
+    def test_plot_error_prob(self):
+        loop = 100
+        
+        pas = 100
+        r = 11
+        
+        fig, ax = plt.subplots()
+        
+        probs = np.empty(((1999-1000)//pas + 1), dtype=float)
+        
+        for i in range(1000, 1999, pas):
+            print(f"E = {i}")
+            eps_b = i/(math.ceil(240/(r+1))*(r+1))
+            err = 0
+            for j in range(loop):
+                m = self.get_seq()
+            
+                X = pj.encoder(m, r, eps_b)
+                
+                R = self.channel(X)
+                
+                m_dec = pj.decoder(R, r, 10)
+                
+                if m_dec != m:
+                    err += 1
+            probs[(i-1000)//pas] = err/loop
+            
+        leg = np.arange(start=1000, stop=1999, step=pas)
+        
+        ax.set_xlabel("Energy")
+        ax.set_ylabel("Error probability")
+        
+        ax.plot(leg, probs)
+        plt.show()
+                
+                
+            
+        
         
         
 
