@@ -240,17 +240,62 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
         
     return m
         
+def read_text_file(file_path: str) -> str:
+   #read the file and return the contents"
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read().strip()
+    
+    print("the message is " + len(content) + " character long" )
+    
+    return content
+
+def write_text_file(file_path: str, content: str) -> None:
+   #write the file
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+def encode_file(input_file: str, output_file: str, r: int, epsilon: float) -> None:
+    message = read_text_file(input_file)
+    encoded_data = encoder(message, r, epsilon)
+    encoded_str = ' '.join(map(str, encoded_data))
+    write_text_file(output_file, encoded_str)
+
+def decode_file(input_file: str, output_file: str, r: int, G: float = 10) -> None:
+    with open(input_file, 'r', encoding='utf-8') as f:
+        encoded_str = f.read().strip()
+
+    encoded_data = np.array([float(x) for x in encoded_str.split()])
+    decoded_text = decoder(encoded_data, r, G)
+    
+    write_text_file(output_file, decoded_text)
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 2)", default=5)
+    parser = argparse.ArgumentParser(description='Encode or decode text files using the custom encoding scheme.')
+    parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 5)", default=5)
+    parser.add_argument("--mode", choices=['encode', 'decode'], required=True, help="Operation mode: encode or decode")
+    parser.add_argument("--input", required=True, help="Input file path")
+    parser.add_argument("--output", required=True, help="Output file path")
+    parser.add_argument("--epsilon", type=float, help="Energy per bit for encoding (default = 2000/(SEQUENCE_LENGTH * (r+1)))")
+    
     args = parser.parse_args()
-        
-    X = encoder("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN", args.r, 2**(args.r+1)/(args.r+1))
-    #print(f"Energy : {np.linalg.norm(X)**2:.2f} J, shape : {X.shape}")
     
-    m = decoder(X, args.r, 1)
-    print(f"Message: {m}")
+    G=10
+
+    if args.epsilon is None:
+        args.epsilon = 1900 / (SEQUENCE_LENGTH * (args.r + 1))
     
+    try:
+        if args.mode == 'encode':
+            encode_file(args.input, args.output, args.r, args.epsilon)
+            print(f"Successfully encoded {args.input} to {args.output}")
+        else: 
+            decode_file(args.input, args.output, args.r, G)
+            print(f"Successfully decoded {args.input} to {args.output}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    exit(main())
