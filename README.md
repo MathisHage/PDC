@@ -23,7 +23,9 @@ Use the `d` / `decode` action. You have to specify an input file (`-i`). Don't f
 You can also encode / decode using a local test channel. Use the action `t` / `test`. You have to specify the parameters as if you were encoding normally. The resulting decoded message is displayed in the command line.
 
 ### Full flow :
-Use the `ff` / `full_flow` action to directly encode, send the data to the server, and decode. Use the parameters as you would to simply encode. The `client` folder used to communicate with the server must be at the same location in memory as `project.py`, and you must be connected to the EPFL network.
+Use the `ff` / `full_flow` action to directly encode, send the data to the server, and decode. Use the parameters as you would to simply encode. The `client` folder used to communicate with the server must be in the same folder as `project.py`, and you must be connected to the EPFL network.
+
+We note that a `res/` folder will be created in the same directory as `project.py`. It will contain the computed $M_r$ matrices to avoid re-computing them each time, and the default output file when encoding is located there.
 
 ## Results
 
