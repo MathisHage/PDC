@@ -262,7 +262,7 @@ def handle_args():
                         help="""'e'/'encode' to encode;
                         'd'/'decode' to decode;
                         't'/'test' to test encoding and decoding on the local test channel;
-                        'ff' / 'full_flow' to encode, send to the server and decode (must be on the EPFL network, and the 'client/' folder must be at the same location in memory as 'project.py').""")
+                        'ff' / 'full_flow' to encode, send to the server and decode (must be on the EPFL network, and the 'client/' folder must be in the same directory as 'project.py').""")
     parser.add_argument("-r", "--r" ,
                         type=int, 
                         help="The value of r to compute B_r (default = 11).", 
