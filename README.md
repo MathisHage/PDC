@@ -27,11 +27,11 @@ You can also encode / decode using a local test channel. Use the action `t` / `t
 The best efficient value of $r$ that we used is the value $r = 11$ (which is the default value for $r$). In fact, it corresponds to assigning exactly one codeword per two characters (so now redundant padding bits are sent), and the size of $\sqrt{\alpha} [B_r  B_r]$ allows for reasonably quick calculations. Here are a few results
 on the error probability achived :
 
-### 1. Error probability as a function of energy ($||X||^2$), if an "error" is a wrongly decoded message :
+### 1. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded message :
 <p align="center"><img width="450" alt="err_prob_per_seq" src="https://github.com/user-attachments/assets/02ae0597-579c-40ff-a900-45d0a3467620" /></p>
 
-### 2. Error probability as a function of energy ($||X||^2$), if an "error" is a wrongly decoded symbol :
+### 2. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded symbol :
 <p align="center"><img width="392" alt="err_prob_per_symb" src="https://github.com/user-attachments/assets/2311c3ac-c587-457d-b1a0-37912be0601e" /></p>
 
 
-*Note : these graphs were obtained by testing 300 times the encoding / decoding of a pseudo-randomly generated sequence on the local test channel (with $r = 11$), and this for values of the energy between 1000 and 1999, with a step of 100.*
+*Note : these graphs were obtained by testing 300 times the encoding / decoding of a pseudo-randomly generated sequence on the local test channel (with r = 11), and this for values of the energy between 1000 and 1999, with a step of 100.*
