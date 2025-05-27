@@ -12,6 +12,7 @@ import numpy as np
 import argparse
 import random
 import math
+import sys
 import os
 
 #------------- UTF-8 constants --------------
@@ -38,6 +39,12 @@ CHAR_NUMBER = len(LEGAL_CHARS_SEQ)
 MIN_R_VALUE = math.floor(math.log2(CHAR_NUMBER)) - 1
 
 SEQUENCE_LENGTH = 40
+
+G = 10
+
+ARG_ENCODE = ["e", "encode"]
+ARG_DECODE = ["d", "decode"]
+ARG_TEST = ['t', 'test']
 
 def m_r(r: int):
     if r <= 0:
@@ -104,8 +111,14 @@ def int_to_binary(x, nb_bits = MIN_R_VALUE+1):
 
 def binary_to_int(bits: np.ndarray) -> int:
     return int(bits.dot(1 << np.arange(bits.size)[::-1]))
-    
 
+def random_char_seq():
+    m = ""
+    for i in range(SEQUENCE_LENGTH):
+        x = random.randint(0, CHAR_NUMBER-1)
+        m += index_to_char(x)
+    return m
+    
 def encoder(message: str, r: int, epsilon: float):
     """
     Encodes a fixed-length string into a vector to be sent on the noisy
@@ -174,7 +187,7 @@ def encoder(message: str, r: int, epsilon: float):
     alpha = math.sqrt(epsilon*(r+1)/(2**(r+1)))
     return X.flatten('C')*alpha
 
-def decoder(x: np.ndarray, r: int, G: float = 10):
+def decoder(x: np.ndarray, r: int, G: float = G):
     
     assert(r >= MIN_R_VALUE)    # Otherwise we cannot encode each of the 64 characters.
     
@@ -239,17 +252,134 @@ def decoder(x: np.ndarray, r: int, G: float = 10):
         m += index_to_char(binary_to_int(bit_tab[i:(i+MIN_R_VALUE+1)]))
         
     return m
-        
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 2)", default=5)
-    args = parser.parse_args()
-        
-    X = encoder("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN", args.r, 2**(args.r+1)/(args.r+1))
-    #print(f"Energy : {np.linalg.norm(X)**2:.2f} J, shape : {X.shape}")
+
+def handle_args():
+    parser = argparse.ArgumentParser(description="Encode or decode messages using the custom encoding scheme.")
+    parser.add_argument("action", 
+                        choices = ARG_ENCODE + ARG_DECODE + ARG_TEST,
+                        help="'e'/'encode' to encode, 'd'/'decode' to decode, or 't'/'test' to test encoding and decoding on the local test channel.")
+    parser.add_argument("-r", "--r" ,
+                        type=int, 
+                        help="The value of r to compute B_r (default = 11).", 
+                        default=11)
+    parser.add_argument("-e", "--energy" ,
+                        type=float, 
+                        help="The desired energy of the vector (default = 1800).", 
+                        default=1800)
+    parser.add_argument("-seq", "--sequence",
+                        type=str, 
+                        help=f"The {SEQUENCE_LENGTH}-symbols sequence to use (default is pseudo-randomly generated). If an input file (--input) is specified, this parameter will be disregarded.",
+                        default=random_char_seq())
+    parser.add_argument("-i", "--input",
+                        help="The input file to encode / decode from.",
+                        default="")
+    parser.add_argument("-o", "--output",
+                        help="Where to write the encoded data.",
+                        default="res/output.txt")
     
-    m = decoder(X, args.r, 1)
-    print(f"Message: {m}")
+    return parser.parse_args()
+
+def test_channel(x):
+    G = 10
+    sigma2 = 10
+    s = random.choice([1, 2])
+    n = x.size
+    Y = np.random.normal(0, np.sqrt(sigma2), n)
+    if s == 1:
+        x_even = np.array(x[::2]) * np.sqrt(G)
+        x_odd = x[1::2]
+    else:
+        x_even = np.array(x[::2])
+        x_odd = x[1::2] * np.sqrt(G)
+    Y[::2] += x_even
+    Y[1::2] += x_odd
+    return Y
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+    
+def read_input_sequence(filename: str, default_val: str):
+    if filename != "":
+        try:
+            file = open(filename, 'r')
+            m = file.read()
+            file.close()
+            if len(m) != SEQUENCE_LENGTH:
+                eprint(f"The number of characters in the file '{filename}' is not {SEQUENCE_LENGTH} !")
+                return -1
+            return m
+        except FileNotFoundError:
+            print(f"File '{filename}' not found, will encode the value passed as argument (-seq).")
+            
+    if len(default_val) != SEQUENCE_LENGTH:
+        eprint(f"The number of characters of the sequence passed as argument is not {SEQUENCE_LENGTH} !")
+        return -1
+    
+    return default_val
+
+def main():
+    args = handle_args()
+    
+    # energy per bit
+    e_b = args.energy / (math.ceil(SEQUENCE_LENGTH * (MIN_R_VALUE+1)/(args.r+1))*(args.r+1))
+    
+    if args.action in ARG_ENCODE:
+        
+        # Choose the message to encode based on the arguments (priority given
+        # to the input file, if specified).
+        m = read_input_sequence(args.input, args.sequence)
+        if m == -1:
+            return
+            
+        print(f"Encoding the sequence '{m}' ...")
+        X = encoder(m, args.r, e_b)
+        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
+        
+        np.savetxt(args.output, X)
+        
+        print(f"Data saved in {args.output}")
+    
+    
+    elif args.action in ARG_DECODE:
+        
+        if args.input == "":
+            eprint("No specified input file ! (use -i [path]).")
+            return
+        
+        # Load file
+        try:
+            R = np.loadtxt(args.input)
+        except FileNotFoundError:
+            eprint(f"The file {args.input} was not found.")
+        
+        print("Decoding...")
+        m = decoder(R, args.r)
+        
+        print(f"The decoded message is : '{m}'.")       
+
+
+    else: # Test case
+        # Choose the message to encode based on the arguments (priority given
+        # to the input file, if specified).
+        m = read_input_sequence(args.input, args.sequence)
+        if m == -1:
+            return
+        
+        print(f"Encoding the sequence '{m}' ...")
+        X = encoder(m, args.r, e_b)
+        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
+        
+        print("Applying the channel effects...")
+        R = test_channel(X)
+        
+        print("Decoding...\n")
+        m_dec = decoder(R, args.r)
+        
+        print(f"The decoded value is '{m_dec}'.")
+        
+        diff = sum ( m_dec[i] != m[i] for i in range(SEQUENCE_LENGTH) )
+        print(f"The decoder failed in {diff} positions.")
+        
     
 
 if __name__ == "__main__":

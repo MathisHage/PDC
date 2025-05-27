@@ -85,11 +85,15 @@ class Tests(unittest.TestCase):
         
     
     def test_error_prob(self):
-        
-        res = np.empty((7), dtype=float)
+        r_start = 5
+        r_end = 12
+        res = np.empty((r_end - r_start), dtype=float)
         
         loop = 100
-        for r in range(5, 12):
+        
+        wanted_energy = 1999
+        
+        for r in range(r_start, r_end):
             print(f"Begin error for r = {r}")
             eps_b = 2000/(math.ceil(240/(r+1))*(r+1))
             err = 0
@@ -107,7 +111,7 @@ class Tests(unittest.TestCase):
                 if m_dec != m:
                     err += 1
                     print(f"   Error ! err = {err}, X = {m_dec}")
-            res[r-5] = err*100/loop
+            res[r-r_start] = err*100/loop
             print(f"End error for r = {r}. Final val = {err}. Error prob = {err*100/loop}%")
             
         print(res)
