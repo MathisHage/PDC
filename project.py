@@ -341,7 +341,7 @@ def decode(input_file: str, r: int):
     try:
         R = np.loadtxt(input_file)
     except FileNotFoundError:
-        eprint(f"The file {input} was not found.")
+        eprint(f"The file {input_file} was not found.")
         return -1
     
     print("Decoding...")
@@ -416,7 +416,7 @@ def main():
         m_dec = decode(Rcv_file , args.r)
         
         # Delete the file where the data from the server was received.
-        pathlib.Path.unlink(Rcv_file)
+        pathlib.Path(Rcv_file).unlink()
         
         if m_dec == -1:
             return
