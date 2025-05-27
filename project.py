@@ -259,7 +259,10 @@ def handle_args():
     parser = argparse.ArgumentParser(description="Encode or decode messages using the custom encoding scheme.")
     parser.add_argument("action", 
                         choices = ARG_ENCODE + ARG_DECODE + ARG_TEST + ARG_FULL_FLOW,
-                        help="'e'/'encode' to encode, 'd'/'decode' to decode, 't'/'test' to test encoding and decoding on the local test channel, 'ff' / 'full_flow' to encode, send to the server and decode (must be on the EPFL network).")
+                        help="""'e'/'encode' to encode;
+                        'd'/'decode' to decode;
+                        't'/'test' to test encoding and decoding on the local test channel;
+                        'ff' / 'full_flow' to encode, send to the server and decode (must be on the EPFL network, and the 'client/' folder must be at the same location in memory as 'project.py').""")
     parser.add_argument("-r", "--r" ,
                         type=int, 
                         help="The value of r to compute B_r (default = 11).", 
@@ -276,7 +279,7 @@ def handle_args():
                         help="The input file to encode / decode from.",
                         default="")
     parser.add_argument("-o", "--output",
-                        help="Where to write the encoded data.",
+                        help="Where to write the encoded data. (default = 'res/output.txt').",
                         default="res/output.txt")
     
     return parser.parse_args()
