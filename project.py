@@ -254,7 +254,7 @@ def decoder(x: np.ndarray, r: int, G: float = G):
     return m
 
 def handle_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Encode or decode messages using the custom encoding scheme.")
     parser.add_argument("action", 
                         choices = ARG_ENCODE + ARG_DECODE + ARG_TEST,
                         help="'e'/'encode' to encode, 'd'/'decode' to decode, or 't'/'test' to test encoding and decoding on the local test channel.")
