@@ -269,31 +269,56 @@ def decode_file(input_file: str, output_file: str, r: int, G: float = 10) -> Non
     
     write_text_file(output_file, decoded_text)
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Encode or decode text files using the custom encoding scheme.')
+    parser = argparse.ArgumentParser(description='Encode or decode messages using the custom encoding scheme.')
     parser.add_argument("--r", type=int, help="The value of r to compute B_r (default = 5)", default=5)
-    parser.add_argument("--mode", choices=['encode', 'decode'], required=True, help="Operation mode: encode or decode")
-    parser.add_argument("--input", required=True, help="Input file path")
-    parser.add_argument("--output", required=True, help="Output file path")
-    parser.add_argument("--epsilon", type=float, help="Energy per bit for encoding (default = 2000/(SEQUENCE_LENGTH * (r+1)))")
+    parser.add_argument("--mode", choices=['encode', 'decode'], required=True, 
+                       help="Operation mode: encode or decode")
+    parser.add_argument("--message", help="Message to encode (default: random sequence)")
+    parser.add_argument("--message-file", help="File containing message to encode")
+    parser.add_argument("--energy", type=float, default=1900.0,
+                       help="Total energy for encoding (default = 1900.0)")
+    parser.add_argument("--input", help="Input file name (default: encoded.txt for decode mode)")
+    parser.add_argument("--output", help="Output file name (default: encoded.txt for encode mode)")
     
     args = parser.parse_args()
     
-    G=10
-
-    if args.epsilon is None:
-        args.epsilon = 1900 / (SEQUENCE_LENGTH * (args.r + 1))
+    # Calculate epsilon based on total energy
+    epsilon = args.energy / (SEQUENCE_LENGTH * (args.r + 1))
     
-    try:
-        if args.mode == 'encode':
-            encode_file(args.input, args.output, args.r, args.epsilon)
-            print(f"Successfully encoded {args.input} to {args.output}")
-        else: 
-            decode_file(args.input, args.output, args.r, G)
-            print(f"Successfully decoded {args.input} to {args.output}")
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return 1
+    if args.mode == 'encode':
+        if args.message_file:
+            try:
+                message = read_text_file(args.message_file)
+                if len(message) != SEQUENCE_LENGTH:
+                    print(f"Error: Message must be exactly {SEQUENCE_LENGTH} characters long")
+                    return 1
+            except FileNotFoundError:
+                print(f"Error: Message file {args.message_file} not found")
+                return 1
+        else:
+            message = args.message if args.message else generate_random_sequence()
+            
+        encoded_data = encoder(message, args.r, epsilon)
+        # Save encoded data to file
+        output_file = args.output if args.output else 'encoded.txt'
+        np.savetxt(output_file, encoded_data)
+        print(f"Encoded message: {message}")
+        print(f"Encoded data saved to {output_file}")
+        
+    else:  # decode mode
+        input_file = args.input if args.input else 'encoded.txt'
+        try:
+            encoded_data = np.loadtxt(input_file)
+            decoded_text = decoder(encoded_data, args.r)
+            output_file = args.output if args.output else 'decoded.txt'
+            write_text_file(output_file, decoded_text)
+            print(f"Decoded message: {decoded_text}")
+            print(f"Decoded text saved to {output_file}")
+        except FileNotFoundError:
+            print(f"Error: {input_file} not found. Please encode a message first.")
+            return 1
     
     return 0
 
