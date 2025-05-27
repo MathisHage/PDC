@@ -31,7 +31,7 @@ on the error probability achived :
 <p align="center"><img width="450" alt="err_prob_per_seq" src="https://github.com/user-attachments/assets/02ae0597-579c-40ff-a900-45d0a3467620" /></p>
 
 ### 2. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded symbol :
-<p align="center"><img width="392" alt="err_prob_per_symb" src="https://github.com/user-attachments/assets/2311c3ac-c587-457d-b1a0-37912be0601e" /></p>
+<p align="center"><img width="450" alt="err_prob_per_symb" src="https://github.com/user-attachments/assets/2311c3ac-c587-457d-b1a0-37912be0601e" /></p>
 
 
 *Note : these graphs were obtained by testing 300 times the encoding / decoding of a pseudo-randomly generated sequence on the local test channel (with r = 11), and this for values of the energy between 1000 and 1999, with a step of 100.*
