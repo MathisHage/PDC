@@ -19,13 +19,16 @@ Use the `e` / `encode` action (1st and only positional argument). If an input fi
 ### Decoding :
 Use the `d` / `decode` action. You have to specify an input file (`-i`). Don't forget the value of $r$ (`-r`) if you did not use the default value when encoding.
 
-#### Testing :
+### Testing :
 You can also encode / decode using a local test channel. Use the action `t` / `test`. You have to specify the parameters as if you were encoding normally. The resulting decoded message is displayed in the command line.
+
+### Full flow :
+Use the `ff` / `full_flow` action to directly encode, send the data to the server, and decode. Use the parameters as you would to simply encode. The `client` folder used to communicate with the server must be at the same location in memory as `project.py`, and you must be connected to the EPFL network.
 
 ## Results
 
 The best efficient value of $r$ that we used is the value $r = 11$ (which is the default value for $r$). In fact, it corresponds to assigning exactly one codeword per two characters (so now redundant padding bits are sent), and the size of $\sqrt{\alpha} [B_r  B_r]$ allows for reasonably quick calculations. Here are a few results
-on the error probability achived :
+on the error probability achieved :
 
 ### 1. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded message :
 <p align="center"><img width="450" alt="err_prob_per_seq" src="https://github.com/user-attachments/assets/02ae0597-579c-40ff-a900-45d0a3467620" /></p>
