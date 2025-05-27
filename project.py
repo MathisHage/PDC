@@ -310,6 +310,10 @@ def read_input_sequence(filename: str, default_val: str):
             return m
         except FileNotFoundError:
             print(f"File '{filename}' not found, will encode the value passed as argument (-seq).")
+            
+    if len(default_val) != SEQUENCE_LENGTH:
+        eprint(f"The number of characters of the sequence passed as argument is not {SEQUENCE_LENGTH} !")
+        return -1
     
     return default_val
 
@@ -317,7 +321,7 @@ def main():
     args = handle_args()
     
     # energy per bit
-    e_b = args.energy / (SEQUENCE_LENGTH * (args.r+1))
+    e_b = args.energy / (math.ceil(SEQUENCE_LENGTH * (MIN_R_VALUE+1)/(args.r+1))*(args.r+1))
     
     if args.action in ARG_ENCODE:
         
@@ -329,6 +333,7 @@ def main():
             
         print(f"Encoding the sequence '{m}' ...")
         X = encoder(m, args.r, e_b)
+        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
         
         np.savetxt(args.output, X)
         
@@ -362,11 +367,12 @@ def main():
         
         print(f"Encoding the sequence '{m}' ...")
         X = encoder(m, args.r, e_b)
+        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
         
         print("Applying the channel effects...")
         R = test_channel(X)
         
-        print("Decoding...")
+        print("Decoding...\n")
         m_dec = decoder(R, args.r)
         
         print(f"The decoded value is '{m_dec}'.")
