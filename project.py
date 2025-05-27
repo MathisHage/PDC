@@ -10,6 +10,7 @@ using AI tools such as ChatGPT or Github Copilot.
 
 import numpy as np
 import argparse
+import pathlib
 import random
 import math
 import sys
@@ -45,6 +46,7 @@ G = 10
 ARG_ENCODE = ["e", "encode"]
 ARG_DECODE = ["d", "decode"]
 ARG_TEST = ['t', 'test']
+ARG_FULL_FLOW = ['ff', 'full_flow']
 
 def m_r(r: int):
     if r <= 0:
@@ -256,8 +258,11 @@ def decoder(x: np.ndarray, r: int, G: float = G):
 def handle_args():
     parser = argparse.ArgumentParser(description="Encode or decode messages using the custom encoding scheme.")
     parser.add_argument("action", 
-                        choices = ARG_ENCODE + ARG_DECODE + ARG_TEST,
-                        help="'e'/'encode' to encode, 'd'/'decode' to decode, or 't'/'test' to test encoding and decoding on the local test channel.")
+                        choices = ARG_ENCODE + ARG_DECODE + ARG_TEST + ARG_FULL_FLOW,
+                        help="""'e'/'encode' to encode;
+                        'd'/'decode' to decode;
+                        't'/'test' to test encoding and decoding on the local test channel;
+                        'ff' / 'full_flow' to encode, send to the server and decode (must be on the EPFL network, and the 'client/' folder must be at the same location in memory as 'project.py').""")
     parser.add_argument("-r", "--r" ,
                         type=int, 
                         help="The value of r to compute B_r (default = 11).", 
@@ -274,7 +279,7 @@ def handle_args():
                         help="The input file to encode / decode from.",
                         default="")
     parser.add_argument("-o", "--output",
-                        help="Where to write the encoded data.",
+                        help="Where to write the encoded data. (default = 'res/output.txt').",
                         default="res/output.txt")
     
     return parser.parse_args()
@@ -302,7 +307,7 @@ def read_input_sequence(filename: str, default_val: str):
     if filename != "":
         try:
             file = open(filename, 'r')
-            m = file.read()
+            m = file.read().strip()
             file.close()
             if len(m) != SEQUENCE_LENGTH:
                 eprint(f"The number of characters in the file '{filename}' is not {SEQUENCE_LENGTH} !")
@@ -317,48 +322,55 @@ def read_input_sequence(filename: str, default_val: str):
     
     return default_val
 
+def encode(m: str, r: int, e_b: float, output_file: str):
+        
+    print(f"Encoding the sequence '{m}' ...")
+    X = encoder(m, r, e_b)
+    print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}")
+    
+    np.savetxt(output_file, X)
+    
+    print(f"Data saved in {output_file}")
+    
+def decode(input_file: str, r: int):
+    if input_file == "":
+        eprint("No specified input file ! (use -i [path]).")
+        return -1
+    
+    # Load file
+    try:
+        R = np.loadtxt(input_file)
+    except FileNotFoundError:
+        eprint(f"The file {input_file} was not found.")
+        return -1
+    
+    print("Decoding...")
+    m = decoder(R, r)
+    
+    print(f"The decoded message is : '{m}'.")
+    return m
+    
+
 def main():
     args = handle_args()
+    os.makedirs("res/", exist_ok=True)
     
     # energy per bit
     e_b = args.energy / (math.ceil(SEQUENCE_LENGTH * (MIN_R_VALUE+1)/(args.r+1))*(args.r+1))
     
     if args.action in ARG_ENCODE:
-        
         # Choose the message to encode based on the arguments (priority given
         # to the input file, if specified).
         m = read_input_sequence(args.input, args.sequence)
         if m == -1:
-            return
-            
-        print(f"Encoding the sequence '{m}' ...")
-        X = encoder(m, args.r, e_b)
-        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
+            return -1
         
-        np.savetxt(args.output, X)
-        
-        print(f"Data saved in {args.output}")
-    
+        encode(m, args.r, e_b, args.output)
     
     elif args.action in ARG_DECODE:
-        
-        if args.input == "":
-            eprint("No specified input file ! (use -i [path]).")
-            return
-        
-        # Load file
-        try:
-            R = np.loadtxt(args.input)
-        except FileNotFoundError:
-            eprint(f"The file {args.input} was not found.")
-        
-        print("Decoding...")
-        m = decoder(R, args.r)
-        
-        print(f"The decoded message is : '{m}'.")       
+        decode(args.input, args.r)
 
-
-    else: # Test case
+    elif args.action in ARG_TEST: # Test case
         # Choose the message to encode based on the arguments (priority given
         # to the input file, if specified).
         m = read_input_sequence(args.input, args.sequence)
@@ -367,19 +379,50 @@ def main():
         
         print(f"Encoding the sequence '{m}' ...")
         X = encoder(m, args.r, e_b)
-        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}\n")
+        print(f"||X||^2 = {round(np.linalg.norm(X)**2):.2f}, n = {X.shape[0]}")
         
         print("Applying the channel effects...")
         R = test_channel(X)
         
-        print("Decoding...\n")
+        print("Decoding...")
         m_dec = decoder(R, args.r)
         
-        print(f"The decoded value is '{m_dec}'.")
+        print(f"The decoded message is '{m_dec}'.")
         
         diff = sum ( m_dec[i] != m[i] for i in range(SEQUENCE_LENGTH) )
         print(f"The decoder failed in {diff} positions.")
         
+    else: # Full flow case
+    
+        Rcv_file = "res/receive.txt"
+        
+        m = read_input_sequence(args.input, args.sequence)
+        if m == -1:
+            return -1
+    
+        encode(m, args.r, e_b, args.output)
+        
+        # Send the data to the server.
+        print("Sending the data to the server...")
+        
+        res = os.system(f"python3 client/client.py --input_file {args.output} --output_file {Rcv_file} --srv_hostname=iscsrv72.epfl.ch --srv_port=80")
+            
+        if res >> 8 != 0:
+            eprint("Error during the communication with the server. Exiting.")
+            return
+        
+        print("Noisy vector received.")
+        
+        m_dec = decode(Rcv_file , args.r)
+        
+        # Delete the file where the data from the server was received.
+        pathlib.Path(Rcv_file).unlink()
+        
+        if m_dec == -1:
+            return
+        
+        diff = sum ( m_dec[i] != m[i] for i in range(SEQUENCE_LENGTH) )
+        print(f"The decoder failed in {diff} positions.")
     
 
 if __name__ == "__main__":
