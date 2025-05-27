@@ -19,10 +19,10 @@ Use the `e` / `encode` action (1st and only positional argument). If an input fi
 ### Decoding :
 Use the `d` / `decode` action. You have to specify an input file (`-i`). Don't forget the value of $r$ (`-r`) if you did not use the default value when encoding.
 
-#### Testing :
+### Testing :
 You can also encode / decode using a local test channel. Use the action `t` / `test`. You have to specify the parameters as if you were encoding normally. The resulting decoded message is displayed in the command line.
 
-#### Full flow :
+### Full flow :
 Use the `ff` / `full_flow` action to directly encode, send the data to the server, and decode. Use the parameters as you would to simply encode. The `client` folder used to communicate with the server must be at the same location in memory as `project.py`, and you must be connected to the EPFL network.
 
 ## Results
