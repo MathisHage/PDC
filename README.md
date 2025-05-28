@@ -33,10 +33,10 @@ The best efficient value of $r$ that we used is the value $r = 11$ (which is the
 on the error probability achieved :
 
 ### 1. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded message :
-<p align="center"><img width="450" alt="err_prob_per_seq" src="https://github.com/user-attachments/assets/02ae0597-579c-40ff-a900-45d0a3467620" /></p>
+<p align="center"><img width="450" alt="err_prob_per_seq_log" src="https://github.com/user-attachments/assets/4cbc0cdb-59e2-40a0-a01d-1f419b5b252f" /></p>
 
 ### 2. Error probability as a function of energy ($||X||^2$), if an "error" is an incorrectly decoded symbol :
-<p align="center"><img width="450" alt="err_prob_per_symb" src="https://github.com/user-attachments/assets/2311c3ac-c587-457d-b1a0-37912be0601e" /></p>
+<p align="center"><img width="450" alt="err_prob_per_symb_log" src="https://github.com/user-attachments/assets/c1e62e74-309b-4c47-8335-9977b467bd7f" /></p>
 
 
 *Note : these graphs were obtained by testing 300 times the encoding / decoding of a pseudo-randomly generated sequence on the local test channel (with r = 11), and this for values of the energy between 1000 and 1999, with a step of 100.*
